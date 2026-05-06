@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISRIM — משחק עברית</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;700;900&family=Heebo:wght@300;400;700&display=swap');
+
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --deep: #0f0c1a;
+    --ink: #1a1530;
+    --parchment: #f5edd8;
+    --parchment-dark: #e8d9bc;
+    --crimson: #8b1a1a;
+    --teal: #1a6b6b;
+    --correct: #2d6e4e;
+    --wrong: #8b1a1a;
+    --card-bg: #fffaf0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--deep);
+    color: var(--parchment);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 20% 50%, rgba(201,168,76,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(26,107,107,0.1) 0%, transparent 50%),
+      var(--deep);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    text-align: center;
+    padding: 40px 0 30px;
+    border-bottom: 1px solid rgba(201,168,76,0.3);
+    margin-bottom: 30px;
+  }
+
+  .logo {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    color: rgba(245,237,216,0.5);
+    text-transform: uppercase;
+    direction: ltr;
+  }
+
+  /* SCORE BAR */
+  .scorebar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 12px;
+    padding: 14px 24px;
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+  }
+
+  .score-item {
+    text-align: center;
+  }
+  .score-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: rgba(245,237,216,0.4);
+    display: block;
+    margin-bottom: 4px;
+    direction: ltr;
+  }
+  .score-value {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.6rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* MENU */
+  .menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .mode-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 16px;
+    padding: 28px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mode-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .mode-card:hover { 
+    border-color: var(--gold); 
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(201,168,76,0.15);
+  }
+  .mode-card:hover::before { opacity: 1; }
+
+  .mode-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+  .mode-title { 
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.2rem; 
+    color: var(--gold-light); 
+    margin-bottom: 6px;
+    direction: rtl;
+  }
+  .mode-desc { font-size: 0.78rem; color: rgba(245,237,216,0.5); direction: rtl; line-height: 1.5; }
+
+  .menu-title {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.5rem;
+    color: var(--gold-light);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .menu-intro {
+    text-align: center;
+    color: rgba(245,237,216,0.6);
+    font-size: 0.85rem;
+    direction: ltr;
+  }
+
+  /* GAME AREA */
+  .question-counter {
+    text-align: center;
+    font-size: 0.8rem;
+    color: rgba(245,237,216,0.4);
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    direction: ltr;
+  }
+
+  .question-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 20px;
+    padding: 36px 30px;
+    text-align: center;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .question-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: rgba(245,237,216,0.4);
+    text-transform: uppercase;
+    direction: ltr;
+    margin-bottom: 16px;
+  }
+
+  .hebrew-word {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    line-height: 1;
+    margin-bottom: 8px;
+    direction: rtl;
+  }
+
+  .french-clue {
+    font-size: 0.85rem;
+    color: rgba(245,237,216,0.55);
+    font-style: italic;
+    direction: ltr;
+  }
+
+  /* CHOICES */
+  .choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .choice-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(201,168,76,0.2);
+    border-radius: 14px;
+    padding: 18px 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+    color: var(--parchment);
+    font-family: 'Heebo', sans-serif;
+  }
+
+  .choice-btn:hover:not(:disabled) {
+    background: rgba(201,168,76,0.12);
+    border-color: var(--gold);
+    transform: scale(1.02);
+  }
+
+  .choice-btn .choice-hebrew {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.8rem;
+    color: var(--gold-light);
+    display: block;
+    direction: rtl;
+    line-height: 1.2;
+  }
+
+  .choice-btn .choice-fr {
+    font-size: 0.75rem;
+    color: rgba(245,237,216,0.5);
+    margin-top: 4px;
+    display: block;
+    direction: ltr;
+  }
+
+  .choice-btn.correct {
+    background: rgba(45,110,78,0.3);
+    border-color: #4caf81;
+    animation: pulse-green 0.4s ease;
+  }
+  .choice-btn.wrong {
+    background: rgba(139,26,26,0.3);
+    border-color: #c05050;
+    animation: shake 0.4s ease;
+  }
+  .choice-btn:disabled { cursor: not-allowed; }
+
+  @keyframes pulse-green {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  /* FEEDBACK */
+  .feedback-box {
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    display: none;
+    direction: rtl;
+  }
+  .feedback-box.show { display: block; animation: fadeIn 0.3s ease; }
+  .feedback-box.correct-fb { background: rgba(45,110,78,0.2); border: 1px solid rgba(76,175,129,0.4); }
+  .feedback-box.wrong-fb { background: rgba(139,26,26,0.2); border: 1px solid rgba(192,80,80,0.4); }
+  .feedback-emoji { font-size: 1.5rem; margin-bottom: 6px; }
+  .feedback-text { font-size: 0.9rem; color: rgba(245,237,216,0.85); direction: ltr; }
+  .feedback-detail { font-size: 0.8rem; color: rgba(245,237,216,0.55); margin-top: 4px; direction: ltr; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* NEXT BUTTON */
+  .next-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--gold), #a07828);
+    border: none;
+    border-radius: 14px;
+    color: var(--deep);
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: none;
+    letter-spacing: 0.05em;
+  }
+  .next-btn.show { display: block; }
+  .next-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.4); }
+
+  /* MATCHING GAME */
+  .match-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .match-col { display: flex; flex-direction: column; gap: 10px; }
+  .match-col-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    color: rgba(245,237,216,0.35);
+    text-align: center;
+    margin-bottom: 4px;
+    direction: ltr;
+  }
+
+  .match-item {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(201,168,76,0.2);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.5rem;
+    color: var(--gold-light);
+    direction: rtl;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .match-item.french-item {
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.85rem;
+    color: var(--parchment);
+    direction: ltr;
+  }
+
+  .match-item:hover:not(.matched):not(.selected) {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.1);
+  }
+  .match-item.selected { border-color: var(--gold); background: rgba(201,168,76,0.2); }
+  .match-item.matched { 
+    border-color: #4caf81; 
+    background: rgba(45,110,78,0.25); 
+    cursor: default;
+    color: #7dd4a8;
+  }
+  .match-item.wrong-match { 
+    border-color: #c05050; 
+    background: rgba(139,26,26,0.25); 
+    animation: shake 0.4s ease;
+  }
+
+  /* FILL BLANK */
+  .blank-sentence {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 2rem;
+    color: var(--parchment);
+    text-align: center;
+    direction: rtl;
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .blank-input {
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(201,168,76,0.3);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.8rem;
+    color: var(--gold-light);
+    text-align: center;
+    direction: rtl;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 14px;
+  }
+  .blank-input:focus { border-color: var(--gold); }
+
+  /* RESULT SCREEN */
+  .result-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 3px solid var(--gold);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    background: rgba(201,168,76,0.08);
+  }
+  .result-pct {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 2.8rem;
+    color: var(--gold);
+    font-weight: 900;
+    line-height: 1;
+  }
+  .result-label { font-size: 0.75rem; color: rgba(245,237,216,0.5); direction: ltr; }
+  .result-msg {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 1.6rem;
+    color: var(--gold-light);
+    text-align: center;
+    margin-bottom: 10px;
+    direction: rtl;
+  }
+  .result-sub { text-align: center; color: rgba(245,237,216,0.55); font-size: 0.85rem; margin-bottom: 30px; direction: ltr; }
+
+  .result-btns { display: flex; gap: 12px; }
+  .result-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    direction: ltr;
+  }
+  .result-btn.primary { background: linear-gradient(135deg, var(--gold), #a07828); color: var(--deep); font-weight: 700; }
+  .result-btn.secondary { background: rgba(255,255,255,0.06); color: var(--parchment); border: 1px solid rgba(201,168,76,0.3); }
+  .result-btn:hover { transform: translateY(-2px); }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* BACK BTN */
+  .back-btn {
+    background: none;
+    border: 1px solid rgba(201,168,76,0.3);
+    color: rgba(245,237,216,0.6);
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+    transition: all 0.2s;
+    direction: ltr;
+  }
+  .back-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* SEPARATOR */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3), transparent);
+    margin: 20px 0;
+  }
+
+  .tip-box {
+    background: rgba(26,107,107,0.15);
+    border: 1px solid rgba(26,107,107,0.4);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 0.8rem;
+    color: rgba(245,237,216,0.7);
+    direction: ltr;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  .tip-box strong { color: #7dd4a8; }
+
+  @media (max-width: 600px) {
+    .menu-grid { grid-template-columns: 1fr; }
+    .choices { grid-template-columns: 1fr; }
+    .hebrew-word { font-size: 3rem; }
+    .match-item { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">ISRIM</div>
+    <div class="subtitle">Jeu pédagogique · עברית · Mots similaires</div>
+  </header>
+
+  <div class="scorebar">
+    <div class="score-item">
+      <span class="score-label">Score</span>
+      <span class="score-value" id="total-score">0</span>
+    </div>
+    <div class="score-item">
+      <span class="score-label">Série</span>
+      <span class="score-value" id="streak">0🔥</span>
+    </div>
+    <div class="score-item">
+      <span class="score-label">Parties</span>
+      <span class="score-value" id="games-played">0</span>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="screen active" id="screen-menu">
+    <p class="menu-title">!בחר משחק</p>
+    <p class="menu-intro">Choose a game mode to practise Hebrew words that differ by one letter</p>
+    <div class="menu-grid">
+      <div class="mode-card" onclick="startGame('mcq')">
+        <span class="mode-icon">🎯</span>
+        <div class="mode-title">תרגום נכון</div>
+        <div class="mode-desc">Choose the correct French translation for the Hebrew word shown</div>
+      </div>
+      <div class="mode-card" onclick="startGame('match')">
+        <span class="mode-icon">🔗</span>
+        <div class="mode-title">התאמה</div>
+        <div class="mode-desc">Match Hebrew words to their French translations</div>
+      </div>
+      <div class="mode-card" onclick="startGame('reverse')">
+        <span class="mode-icon">🔄</span>
+        <div class="mode-title">מצרפתית לעברית</div>
+        <div class="mode-desc">Find the Hebrew word from the French clue</div>
+      </div>
+      <div class="mode-card" onclick="startGame('pairs')">
+        <span class="mode-icon">✨</span>
+        <div class="mode-title">זוגות דומים</div>
+        <div class="mode-desc">Identify which two words are similar (differ by one letter)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MCQ GAME -->
+  <div class="screen" id="screen-mcq">
+    <button class="back-btn" onclick="goMenu()">← Menu</button>
+    <div class="progress-bar"><div class="progress-fill" id="mcq-progress"></div></div>
+    <div class="question-counter" id="mcq-counter">Question 1 / 10</div>
+    <div class="question-box">
+      <div class="question-label">What does this word mean?</div>
+      <div class="hebrew-word" id="mcq-word"></div>
+      <div class="french-clue" id="mcq-clue"></div>
+    </div>
+    <div class="choices" id="mcq-choices"></div>
+    <div class="feedback-box" id="mcq-feedback">
+      <div class="feedback-emoji" id="mcq-emoji"></div>
+      <div class="feedback-text" id="mcq-text"></div>
+      <div class="feedback-detail" id="mcq-detail"></div>
+    </div>
+    <button class="next-btn" id="mcq-next" onclick="nextMCQ()">הבא →</button>
+  </div>
+
+  <!-- REVERSE GAME -->
+  <div class="screen" id="screen-reverse">
+    <button class="back-btn" onclick="goMenu()">← Menu</button>
+    <div class="progress-bar"><div class="progress-fill" id="rev-progress"></div></div>
+    <div class="question-counter" id="rev-counter">Question 1 / 10</div>
+    <div class="question-box">
+      <div class="question-label">Which Hebrew word means…</div>
+      <div class="hebrew-word" style="font-family:'Heebo',sans-serif;font-size:2rem;direction:ltr" id="rev-word"></div>
+    </div>
+    <div class="choices" id="rev-choices"></div>
+    <div class="feedback-box" id="rev-feedback">
+      <div class="feedback-emoji" id="rev-emoji"></div>
+      <div class="feedback-text" id="rev-text"></div>
+      <div class="feedback-detail" id="rev-detail"></div>
+    </div>
+    <button class="next-btn" id="rev-next" onclick="nextReverse()">הבא →</button>
+  </div>
+
+  <!-- MATCHING GAME -->
+  <div class="screen" id="screen-match">
+    <button class="back-btn" onclick="goMenu()">← Menu</button>
+    <div class="question-counter" id="match-counter">Match all pairs!</div>
+    <div class="tip-box">💡 Tap a <strong>Hebrew word</strong>, then tap its <strong>French translation</strong>. Watch out — similar words, different meanings!</div>
+    <div class="match-grid">
+      <div>
+        <div class="match-col-label">עברית — Hebrew</div>
+        <div class="match-col" id="match-hebrew"></div>
+      </div>
+      <div>
+        <div class="match-col-label">Français</div>
+        <div class="match-col" id="match-french"></div>
+      </div>
+    </div>
+    <div class="feedback-box" id="match-feedback">
+      <div class="feedback-text" id="match-text"></div>
+    </div>
+    <button class="next-btn" id="match-next" onclick="nextMatch()">Nouveau set →</button>
+  </div>
+
+  <!-- PAIRS GAME -->
+  <div class="screen" id="screen-pairs">
+    <button class="back-btn" onclick="goMenu()">← Menu</button>
+    <div class="progress-bar"><div class="progress-fill" id="pairs-progress"></div></div>
+    <div class="question-counter" id="pairs-counter">Question 1 / 8</div>
+    <div class="question-box">
+      <div class="question-label">Which two words differ by only ONE letter?</div>
+      <div class="french-clue" id="pairs-clue" style="font-size:0.9rem;color:rgba(245,237,216,0.7)"></div>
+    </div>
+    <div class="choices" id="pairs-choices" style="grid-template-columns:1fr 1fr 1fr;"></div>
+    <div class="feedback-box" id="pairs-feedback">
+      <div class="feedback-emoji" id="pairs-emoji"></div>
+      <div class="feedback-text" id="pairs-text"></div>
+    </div>
+    <button class="next-btn" id="pairs-next" onclick="nextPairs()">הבא →</button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="screen-result">
+    <div class="result-circle">
+      <span class="result-pct" id="result-pct"></span>
+      <span class="result-label">correct</span>
+    </div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="result-sub" id="result-sub"></div>
+    <div class="divider"></div>
+    <div class="result-btns">
+      <button class="result-btn secondary" onclick="goMenu()">← Menu</button>
+      <button class="result-btn primary" id="result-replay" onclick="replayGame()">Rejouer 🔄</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const words = [
+  // Core similar pairs
+  { heb: "עַם",    nik: "עַם",    fr: "peuple",               group: "am" },
+  { heb: "אַם",    nik: "אַם",    fr: "mère (poétique)",      group: "am" },
+  { heb: "עֹשֶׁר", nik: "עֹשֶׁר", fr: "richesse",             group: "osher" },
+  { heb: "אֹשֶׁר", nik: "אֹשֶׁר", fr: "bonheur",              group: "osher" },
+  { heb: "הַרְבֵּה",nik:"הַרְבֵּה",fr: "beaucoup",             group: "arba" },
+  { heb: "אַרְבֶּה",nik:"אַרְבֶּה",fr: "sauterelle",           group: "arba" },
+  { heb: "אַרְבַּע",nik:"אַרְבַּע",fr: "quatre",               group: "arba" },
+  { heb: "שָׁלוֹם", nik:"שָׁלוֹם", fr: "paix",                 group: "om" },
+  { heb: "חָלוֹם", nik:"חָלוֹם", fr: "rêve",                   group: "om" },
+  { heb: "תָּלוֹם", nik:"תָּלוֹם", fr: "sillon",               group: "om" },
+  { heb: "עֵץ",    nik:"עֵץ",    fr: "arbre / bois",           group: "etz" },
+  { heb: "קֵץ",    nik:"קֵץ",    fr: "fin",                    group: "etz" },
+  { heb: "חֵץ",    nik:"חֵץ",    fr: "flèche",                 group: "etz" },
+  { heb: "עוֹר",   nik:"עוֹר",   fr: "peau / cuir",            group: "or" },
+  { heb: "אוֹר",   nik:"אוֹר",   fr: "lumière",                group: "or" },
+  { heb: "עִיר",   nik:"עִיר",   fr: "ville",                  group: "or" },
+  { heb: "שָׁנָה",  nik:"שָׁנָה",  fr: "année / il a répété",  group: "shana" },
+  { heb: "שֵׁנָה",  nik:"שֵׁנָה",  fr: "sommeil",               group: "shana" },
+  { heb: "שִׁנָּה", nik:"שִׁנָּה", fr: "il a changé",           group: "shana" },
+  { heb: "מוֹרָה",  nik:"מוֹרָה",  fr: "professeure",          group: "mora" },
+  { heb: "מֹרָה",   nik:"מֹרָה",   fr: "crainte (biblique)",   group: "mora" },
+  { heb: "מָרָה",   nik:"מָרָה",   fr: "amer / bile",          group: "mora" },
+  { heb: "רוּחַ",  nik:"רוּחַ",   fr: "vent / esprit / âme",  group: "ruah" },
+  { heb: "לוּחַ",  nik:"לוּחַ",   fr: "tableau / tablette",   group: "ruah" },
+  { heb: "נוּחַ",  nik:"נוּחַ",   fr: "repos / Noé",          group: "ruah" },
+  { heb: "לֶחֶם",  nik:"לֶחֶם",   fr: "pain",                 group: "lehem" },
+  { heb: "נֶחֶם",  nik:"נֶחֶם",   fr: "consolation",          group: "lehem" },
+  { heb: "אַיִן",  nik:"אַיִן",   fr: "néant / rien",         group: "ayin" },
+  { heb: "עַיִן",  nik:"עַיִן",   fr: "œil / source",         group: "ayin" },
+  { heb: "יָד",    nik:"יָד",     fr: "main",                 group: "yad" },
+  { heb: "עָד",    nik:"עָד",     fr: "jusqu'à / témoin",     group: "yad" },
+  { heb: "דָּבָר",  nik:"דָּבָר",  fr: "parole / chose",       group: "davar" },
+  { heb: "גָּבָר",  nik:"גָּבָר",  fr: "homme fort",           group: "davar" },
+  { heb: "מָקוֹם", nik:"מָקוֹם",  fr: "endroit / lieu",       group: "makom" },
+  { heb: "נָקוֹם", nik:"נָקוֹם",  fr: "vengeance",            group: "makom" },
+  { heb: "סֵפֶר",  nik:"סֵפֶר",   fr: "livre",                group: "sefer" },
+  { heb: "שֶׁפֶר",  nik:"שֶׁפֶר",  fr: "splendeur (biblique)", group: "sefer" },
+  { heb: "עֵפֶר",  nik:"עֵפֶר",   fr: "poussière / cendre",  group: "sefer" },
+  { heb: "שָׂדֶה",  nik:"שָׂדֶה",  fr: "champ",                group: "sadeh" },
+  { heb: "שָׁמַר",  nik:"שָׁמַר",  fr: "il a gardé",           group: "shamar" },
+  { heb: "גָּמַר",  nik:"גָּמַר",  fr: "il a terminé",         group: "shamar" },
+];
+
+// Pairs questions for "pairs" mode
+const pairsQuestions = [
+  { pair: ["הַרְבֵּה","אַרְבֶּה"], distractors:["שָׁלוֹם"], clue: "beaucoup / sauterelle — which two share the same letters except the first?" },
+  { pair: ["עֹשֶׁר","אֹשֶׁר"], distractors:["עַיִן"], clue: "richesse / bonheur — spot the near-twins" },
+  { pair: ["שָׁלוֹם","חָלוֹם"], distractors:["אַרְבַּע"], clue: "paix / rêve — one letter apart" },
+  { pair: ["עֵץ","קֵץ"], distractors:["רוּחַ"], clue: "arbre / fin — which share the same ending?" },
+  { pair: ["עוֹר","אוֹר"], distractors:["עִיר"], clue: "peau / lumière — almost identical!" },
+  { pair: ["שָׁנָה","שֵׁנָה"], distractors:["מוֹרָה"], clue: "année / sommeil — spot the pair" },
+  { pair: ["לֶחֶם","נֶחֶם"], distractors:["דָּבָר"], clue: "pain / consolation — which two?" },
+  { pair: ["רוּחַ","לוּחַ"], distractors:["שֶׁפֶר"], clue: "vent / tableau — one letter changes everything" },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  mode: null,
+  q: 0,
+  correct: 0,
+  total: 0,
+  queue: [],
+  score: parseInt(localStorage.getItem('isrim_score')||0),
+  streak: parseInt(localStorage.getItem('isrim_streak')||0),
+  games: parseInt(localStorage.getItem('isrim_games')||0),
+  matchSelected: null,
+  matchSet: [],
+  matchMatched: 0,
+  matchCorrect: 0,
+  matchRound: 0,
+  pairsQ: 0,
+  pairsCorrect: 0,
+  pairsQueue: [],
+  pairsSelected: [],
+};
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function saveScore() {
+  localStorage.setItem('isrim_score', state.score);
+  localStorage.setItem('isrim_streak', state.streak);
+  localStorage.setItem('isrim_games', state.games);
+}
+
+function updateScoreBar() {
+  document.getElementById('total-score').textContent = state.score;
+  document.getElementById('streak').textContent = state.streak + (state.streak >= 3 ? '🔥' : '');
+  document.getElementById('games-played').textContent = state.games;
+}
+
+function goMenu() {
+  state.matchSelected = null;
+  showScreen('menu');
+}
+
+function replayGame() { startGame(state.mode); }
+
+// ============================================================
+// MCQ MODE
+// ============================================================
+function startGame(mode) {
+  state.mode = mode;
+  state.q = 0;
+  state.correct = 0;
+  if (mode === 'mcq') {
+    state.queue = shuffle(words).slice(0, 10);
+    state.total = state.queue.length;
+    showScreen('mcq');
+    renderMCQ();
+  } else if (mode === 'reverse') {
+    state.queue = shuffle(words).slice(0, 10);
+    state.total = state.queue.length;
+    showScreen('reverse');
+    renderReverse();
+  } else if (mode === 'match') {
+    state.matchRound = 0;
+    startMatch();
+  } else if (mode === 'pairs') {
+    state.pairsQ = 0;
+    state.pairsCorrect = 0;
+    state.pairsQueue = shuffle(pairsQuestions).slice(0, 8);
+    showScreen('pairs');
+    renderPairs();
+  }
+}
+
+function renderMCQ() {
+  const item = state.queue[state.q];
+  const progress = ((state.q) / state.total) * 100;
+  document.getElementById('mcq-progress').style.width = progress + '%';
+  document.getElementById('mcq-counter').textContent = `Question ${state.q+1} / ${state.total}`;
+  document.getElementById('mcq-word').textContent = item.nik;
+  document.getElementById('mcq-clue').textContent = '';
+
+  // 4 choices: correct + 3 distractors
+  let distractors = words.filter(w => w.fr !== item.fr);
+  distractors = shuffle(distractors).slice(0,3);
+  const choices = shuffle([item, ...distractors]);
+
+  const el = document.getElementById('mcq-choices');
+  el.innerHTML = '';
+  choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-hebrew">${c.nik}</span><span class="choice-fr">${c.fr}</span>`;
+    btn.onclick = () => selectMCQ(btn, c.fr, item.fr, item);
+    el.appendChild(btn);
+  });
+
+  document.getElementById('mcq-feedback').className = 'feedback-box';
+  document.getElementById('mcq-next').className = 'next-btn';
+}
+
+function selectMCQ(btn, chosen, correct, item) {
+  document.querySelectorAll('#mcq-choices .choice-btn').forEach(b => b.disabled = true);
+  const fb = document.getElementById('mcq-feedback');
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    state.correct++;
+    state.score += 10 + state.streak * 2;
+    state.streak++;
+    fb.className = 'feedback-box correct-fb show';
+    document.getElementById('mcq-emoji').textContent = ['✅','🌟','💫','🎉'][Math.floor(Math.random()*4)];
+    document.getElementById('mcq-text').textContent = 'נכון! Correct!';
+    document.getElementById('mcq-detail').textContent = `${item.nik} = ${item.fr}`;
+  } else {
+    btn.classList.add('wrong');
+    state.streak = 0;
+    fb.className = 'feedback-box wrong-fb show';
+    document.getElementById('mcq-emoji').textContent = '❌';
+    document.getElementById('mcq-text').textContent = `The correct answer was: ${correct}`;
+    document.getElementById('mcq-detail').textContent = `${item.nik} = ${item.fr}`;
+    // highlight correct
+    document.querySelectorAll('#mcq-choices .choice-btn').forEach(b => {
+      if (b.querySelector('.choice-fr').textContent === correct) b.classList.add('correct');
+    });
+  }
+  saveScore(); updateScoreBar();
+  document.getElementById('mcq-next').className = 'next-btn show';
+}
+
+function nextMCQ() {
+  state.q++;
+  if (state.q >= state.total) showResult();
+  else renderMCQ();
+}
+
+// ============================================================
+// REVERSE MODE
+// ============================================================
+function renderReverse() {
+  const item = state.queue[state.q];
+  const progress = ((state.q) / state.total) * 100;
+  document.getElementById('rev-progress').style.width = progress + '%';
+  document.getElementById('rev-counter').textContent = `Question ${state.q+1} / ${state.total}`;
+  document.getElementById('rev-word').textContent = item.fr;
+
+  let distractors = words.filter(w => w.heb !== item.heb);
+  distractors = shuffle(distractors).slice(0,3);
+  const choices = shuffle([item, ...distractors]);
+
+  const el = document.getElementById('rev-choices');
+  el.innerHTML = '';
+  choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-hebrew">${c.nik}</span><span class="choice-fr">${c.fr}</span>`;
+    btn.onclick = () => selectReverse(btn, c.heb, item.heb, item);
+    el.appendChild(btn);
+  });
+
+  document.getElementById('rev-feedback').className = 'feedback-box';
+  document.getElementById('rev-next').className = 'next-btn';
+}
+
+function selectReverse(btn, chosen, correct, item) {
+  document.querySelectorAll('#rev-choices .choice-btn').forEach(b => b.disabled = true);
+  const fb = document.getElementById('rev-feedback');
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    state.correct++;
+    state.score += 10 + state.streak * 2;
+    state.streak++;
+    fb.className = 'feedback-box correct-fb show';
+    document.getElementById('rev-emoji').textContent = '🌟';
+    document.getElementById('rev-text').textContent = 'נכון! Correct!';
+    document.getElementById('rev-detail').textContent = `${item.nik} = ${item.fr}`;
+  } else {
+    btn.classList.add('wrong');
+    state.streak = 0;
+    fb.className = 'feedback-box wrong-fb show';
+    document.getElementById('rev-emoji').textContent = '❌';
+    document.getElementById('rev-text').textContent = `Correct: ${item.nik} = ${item.fr}`;
+    document.getElementById('rev-detail').textContent = '';
+    document.querySelectorAll('#rev-choices .choice-btn').forEach(b => {
+      if (b.querySelector('.choice-hebrew').textContent === item.nik) b.classList.add('correct');
+    });
+  }
+  saveScore(); updateScoreBar();
+  document.getElementById('rev-next').className = 'next-btn show';
+}
+
+function nextReverse() {
+  state.q++;
+  if (state.q >= state.total) showResult();
+  else renderReverse();
+}
+
+// ============================================================
+// MATCHING MODE
+// ============================================================
+const matchSets = [
+  ["הַרְבֵּה","אַרְבֶּה","אַרְבַּע","שָׁלוֹם","חָלוֹם","תָּלוֹם"],
+  ["עֵץ","קֵץ","חֵץ","עוֹר","אוֹר","עִיר"],
+  ["שָׁנָה","שֵׁנָה","מוֹרָה","מָרָה","רוּחַ","לוּחַ"],
+  ["לֶחֶם","נֶחֶם","עַם","עַיִן","אַיִן","יָד"],
+  ["סֵפֶר","שֶׁפֶר","עֵפֶר","דָּבָר","גָּבָר","מָקוֹם"],
+];
+
+function startMatch() {
+  const setWords = matchSets[state.matchRound % matchSets.length].map(h => words.find(w => w.heb === h)).filter(Boolean);
+  state.matchSet = shuffle(setWords).slice(0, 6);
+  state.matchSelected = null;
+  state.matchMatched = 0;
+  state.matchCorrect = 0;
+
+  const hebrewCol = document.getElementById('match-hebrew');
+  const frenchCol = document.getElementById('match-french');
+  hebrewCol.innerHTML = '';
+  frenchCol.innerHTML = '';
+
+  const shuffledFr = shuffle([...state.matchSet]);
+
+  state.matchSet.forEach(item => {
+    const hDiv = document.createElement('div');
+    hDiv.className = 'match-item';
+    hDiv.dataset.heb = item.heb;
+    hDiv.textContent = item.nik;
+    hDiv.onclick = () => selectMatchHeb(hDiv);
+    hebrewCol.appendChild(hDiv);
+  });
+
+  shuffledFr.forEach(item => {
+    const fDiv = document.createElement('div');
+    fDiv.className = 'match-item french-item';
+    fDiv.dataset.heb = item.heb;
+    fDiv.textContent = item.fr;
+    fDiv.onclick = () => selectMatchFr(fDiv);
+    frenchCol.appendChild(fDiv);
+  });
+
+  document.getElementById('match-counter').textContent = `Match all ${state.matchSet.length} pairs!`;
+  document.getElementById('match-feedback').className = 'feedback-box';
+  document.getElementById('match-next').className = 'next-btn';
+  showScreen('match');
+}
+
+function selectMatchHeb(el) {
+  if (el.classList.contains('matched')) return;
+  document.querySelectorAll('#match-hebrew .match-item').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  state.matchSelected = el;
+}
+
+function selectMatchFr(el) {
+  if (el.classList.contains('matched') || !state.matchSelected) return;
+  const hebEl = state.matchSelected;
+  if (hebEl.dataset.heb === el.dataset.heb) {
+    hebEl.classList.remove('selected');
+    hebEl.classList.add('matched');
+    el.classList.add('matched');
+    state.matchMatched++;
+    state.matchCorrect++;
+    state.matchSelected = null;
+    state.score += 15;
+    state.streak++;
+    saveScore(); updateScoreBar();
+    if (state.matchMatched === state.matchSet.length) {
+      setTimeout(() => {
+        document.getElementById('match-feedback').className = 'feedback-box correct-fb show';
+        document.getElementById('match-text').textContent = `🎉 Excellent! All ${state.matchSet.length} pairs matched!`;
+        document.getElementById('match-next').className = 'next-btn show';
+      }, 300);
+    }
+  } else {
+    hebEl.classList.remove('selected');
+    hebEl.classList.add('wrong-match');
+    el.classList.add('wrong-match');
+    state.streak = 0;
+    saveScore(); updateScoreBar();
+    setTimeout(() => {
+      hebEl.classList.remove('wrong-match');
+      el.classList.remove('wrong-match');
+    }, 600);
+    state.matchSelected = null;
+  }
+}
+
+function nextMatch() {
+  state.matchRound++;
+  state.games++;
+  saveScore();
+  startMatch();
+}
+
+// ============================================================
+// PAIRS MODE
+// ============================================================
+function renderPairs() {
+  const q = state.pairsQueue[state.pairsQ];
+  const progress = (state.pairsQ / state.pairsQueue.length) * 100;
+  document.getElementById('pairs-progress').style.width = progress + '%';
+  document.getElementById('pairs-counter').textContent = `Question ${state.pairsQ+1} / ${state.pairsQueue.length}`;
+  document.getElementById('pairs-clue').textContent = q.clue;
+  state.pairsSelected = [];
+
+  const allOptions = shuffle([...q.pair, ...q.distractors]);
+  const el = document.getElementById('pairs-choices');
+  el.innerHTML = '';
+  allOptions.forEach(w => {
+    const word = words.find(x => x.heb === w || x.nik === w);
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-hebrew">${word ? word.nik : w}</span>`;
+    btn.dataset.word = w;
+    btn.onclick = () => selectPair(btn, w, q.pair);
+    el.appendChild(btn);
+  });
+
+  document.getElementById('pairs-feedback').className = 'feedback-box';
+  document.getElementById('pairs-next').className = 'next-btn';
+}
+
+function selectPair(btn, word, correctPair) {
+  if (btn.classList.contains('correct') || btn.classList.contains('wrong')) return;
+  
+  const alreadySelected = state.pairsSelected.findIndex(s => s.word === word);
+  if (alreadySelected !== -1) {
+    btn.classList.remove('selected');
+    state.pairsSelected.splice(alreadySelected, 1);
+    return;
+  }
+
+  btn.classList.add('selected');
+  state.pairsSelected.push({btn, word});
+
+  if (state.pairsSelected.length === 2) {
+    const selected = state.pairsSelected.map(s => s.word).sort().join('|');
+    const correct = [...correctPair].sort().join('|');
+    const isCorrect = selected === correct;
+
+    document.querySelectorAll('#pairs-choices .choice-btn').forEach(b => b.disabled = true);
+    const fb = document.getElementById('pairs-feedback');
+
+    if (isCorrect) {
+      state.pairsSelected.forEach(s => { s.btn.classList.remove('selected'); s.btn.classList.add('correct'); });
+      state.pairsCorrect++;
+      state.score += 12;
+      state.streak++;
+      fb.className = 'feedback-box correct-fb show';
+      document.getElementById('pairs-emoji').textContent = '🌟';
+      document.getElementById('pairs-text').textContent = `נכון! ${correctPair[0]} & ${correctPair[1]} differ by one letter!`;
+    } else {
+      state.pairsSelected.forEach(s => { s.btn.classList.remove('selected'); s.btn.classList.add('wrong'); });
+      state.streak = 0;
+      fb.className = 'feedback-box wrong-fb show';
+      document.getElementById('pairs-emoji').textContent = '❌';
+      document.getElementById('pairs-text').textContent = `The pair was: ${correctPair[0]} & ${correctPair[1]}`;
+      // Show correct
+      document.querySelectorAll('#pairs-choices .choice-btn').forEach(b => {
+        if (correctPair.includes(b.dataset.word)) b.classList.add('correct');
+      });
+    }
+    saveScore(); updateScoreBar();
+    document.getElementById('pairs-next').className = 'next-btn show';
+  }
+}
+
+function nextPairs() {
+  state.pairsQ++;
+  if (state.pairsQ >= state.pairsQueue.length) {
+    state.correct = state.pairsCorrect;
+    state.total = state.pairsQueue.length;
+    state.games++;
+    saveScore();
+    showResult();
+  } else {
+    renderPairs();
+  }
+}
+
+// ============================================================
+// RESULT
+// ============================================================
+function showResult() {
+  if (state.mode !== 'match') {
+    state.games++;
+    saveScore();
+  }
+  const pct = Math.round((state.correct / state.total) * 100);
+  document.getElementById('result-pct').textContent = pct + '%';
+
+  let msg, sub;
+  if (pct === 100) { msg = "!מושלם"; sub = "Perfect score! You're a Hebrew master! 🏆"; }
+  else if (pct >= 80) { msg = "!מצוין"; sub = "Excellent work! Keep it up! 🌟"; }
+  else if (pct >= 60) { msg = "!טוב מאוד"; sub = "Good job! A little more practice! 📚"; }
+  else { msg = "!המשך להתאמן"; sub = "Keep practising — you'll get there! 💪"; }
+
+  document.getElementById('result-msg').textContent = msg;
+  document.getElementById('result-sub').textContent = `${state.correct} / ${state.total} correct · ${sub}`;
+  updateScoreBar();
+  showScreen('result');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+updateScoreBar();
+</script>
+</body>
+</html>
